@@ -1,0 +1,105 @@
+:root {
+    --bgColor: #0c0c0c;
+    --textPrimary: #d3c2c3;
+    --textSecondary: #404040;
+    --primaryColor: #b7976a;
+    --errorColor: #9d7b7d;
+}
+
+@font-face {
+    font-family: 'Roboto Mono';
+    src: url("RobotoMono-Regular.ttf")
+}
+
+body {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    background-color: var(--bgColor);
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.4rem;
+}
+
+main {
+    height: inherit;
+    position: relative;
+}
+
+#wordsList {
+    line-height: 40px;
+    font-size: 32px;
+    max-height: 5.5em;
+    overflow: hidden; 
+    position: absolute;
+    top: 40%;
+    margin: 0 5%;
+    color: var(--textSecondary);
+}
+
+.word {
+    display: inline-block;
+    font-family: "Roboto Mono", monospace;
+    margin: 8px;
+}
+
+.letter.correct {
+    color: var(--textPrimary);
+}
+
+.letter.incorrect {
+    color: var(--errorColor);
+}
+
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+#cursor {
+    width: 2px;
+    height: 40px;
+    background-color: var(--primaryColor);
+    position: fixed;
+    animation: blink .3s infinite;
+}
+
+header {
+    margin: 0 5%;
+    padding-top: 5%;
+    box-sizing: border-box;
+}
+
+header p {
+    display: inline-block;
+    color: var(--textPrimary);
+    margin: 8px;
+}
+
+#result {
+    display: flex;
+    justify-content: space-around;
+    color: var(--primaryColor);
+    top: 32%;
+    position: absolute;
+    width: 80%;
+    left: 10%;
+    font-size: 32px;
+}
+
+#maxResults {
+    display: flex;
+    justify-content: space-around;
+    color: var(--textSecondary);
+    top: 35%;
+    position: absolute;
+    width: 80%;
+    left: 10%;
+    font-size: 32px;
+}
