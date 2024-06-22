@@ -1,2 +1,2 @@
-# test
+# typecloud
 a speedtyping website
