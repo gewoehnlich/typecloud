@@ -94,6 +94,7 @@ function newGame() {
     const wordsQueue = new Queue();
     generateWords();
     setCurrent();
+    setMaxResult();
     changeCursorPosition();
 
     return wordsQueue;
@@ -152,15 +153,32 @@ function registerWord(currentWord) {
     // const word = extractWord(currentWord);
 }
 
+function updateMaxResult() { 
+    for (let i = 0; i < 4; ++i) {
+        if (wordsQueue[valuesList[i]] > maxResultValues[i]) {
+            maxResultValues[i] = wordsQueue[valuesList[i]];
+            localStorage.setItem(maxResultIds[i], maxResultValues[i]);
+            document.getElementById(maxResultIds[i]).textContent = maxResultValues[i];
+        }
+    }
+}
+
+function setMaxResult() {
+    for (let i = 0; i < 4; ++i) {
+        document.getElementById(maxResultIds[i]).textContent = maxResultValues[i];
+    }
+}
+
 document.addEventListener("keydown", ev => {
     const key = ev.key;
     const currentWord = document.querySelector(".word.current");
     const currentLetter = currentWord.querySelector(".letter.current");
-    const expected = currentLetter?.textContent || " ";
+    const expected = currentLetter.textContent || " ";
     const isLetter = key.length === 1 && key != " ";
     const isSpace = key === " ";
     const isBackspace = key === "Backspace";
 
+    console.log(key);
     if (isBackspace) {
         const isFirstLetter = currentLetter === currentWord.firstChild;
         if (ev.ctrlKey) {
@@ -176,16 +194,18 @@ document.addEventListener("keydown", ev => {
             currentLetter.classList.remove("current");
             currentWord.firstChild.classList.add("current");
         } else if (!isFirstLetter) {
+            if (currentLetter.classList.contains("extra")) {
+                currentLetter.remove();
+            } else {
+                currentLetter.classList.remove("current");
+                currentLetter.classList.remove("correct");
+                currentLetter.classList.remove("incorrect");
+            }
+
             const previousLetterClassList = currentLetter.previousSibling.classList;
-            currentLetter.classList.remove("current");
-            currentLetter.classList.remove("correct");
-            currentLetter.classList.remove("incorrect");
             previousLetterClassList.remove("incorrect");
             previousLetterClassList.remove("correct");
             previousLetterClassList.add("current");
-            if (currentLetter.classList.contains("extra")) {
-                currentLetter.remove();
-            }
         }
     } else if (key === expected) {
         if (isLetter) {
@@ -193,11 +213,18 @@ document.addEventListener("keydown", ev => {
             currentLetter.classList.add("correct");
             currentLetter.nextSibling.classList.add("current"); 
         } else if (isSpace) {
-            const stillWrong = currentWord.querySelector(".incorrect");
+            let stillWrong = false;
+            for (const letter of currentWord.childNodes) {
+                if (letter.classList.contains("incorrect")) {
+                    stillWrong = true;
+                    break;
+                }
+            }
+
             if (!stillWrong) {
                 registerWord(currentWord);
                 calculateTimeRanges();
-                // checkMaxResult();
+                updateMaxResult();
                 // getWPM(timeRangeIds, maxResultIds, valuesList, pointersList);
                 
                 currentLetter.classList.remove("current");
@@ -209,7 +236,15 @@ document.addEventListener("keydown", ev => {
             }
         }
     } else {
-        if (isLetter || isSpace) {
+        if (expected === " ") {
+            // i have trouble with implementing this
+            // because every word ends with a "space" element
+            // and if user for example make a mistake when "space" is current
+            // it should add an extra element
+            // which is problematic, because i will have to move this "space"
+            
+            // ??? will return to it after some time
+        } else if (isLetter || isSpace) {
             //// 
             currentLetter.classList.add("incorrect");
             const nextLetter = currentLetter.nextSibling;
@@ -239,9 +274,31 @@ const words = localStorage.getItem("words").split(",");
 const wordsLength = words.length;
 const wordsList = document.getElementById('wordsList');
 const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
-const wordsQueue = newGame();
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
+
+let maxResultValues = [];
+for (const result of maxResultIds) {
+    const maxResult = localStorage.getItem(result);
+    if (!maxResult) {
+        localStorage.setItem(result, 0);
+        maxResultValues.push(Number(0));
+    } else {
+        maxResultValues.push(parseInt(maxResult));
+    }
+}
+
+for (const letter of letters) {
+    if (!localStorage.getItem(letter + "Wrong")) {
+        localStorage.setItem(letter + "Wrong", 0);
+    }
+
+    if (!localStorage.getItem(letter + "Total")) {
+        localStorage.setItem(letter + "Total", 0);
+    }
+}
+
+const wordsQueue = newGame();
 const valuesList = wordsQueue.valuesList;
 const pointersList = wordsQueue.pointersList;
 const timeRanges = [15, 30, 60, 120];
