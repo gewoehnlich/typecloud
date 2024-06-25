@@ -225,7 +225,6 @@ document.addEventListener("keydown", ev => {
                 registerWord(currentWord);
                 calculateTimeRanges();
                 updateMaxResult();
-                // getWPM(timeRangeIds, maxResultIds, valuesList, pointersList);
                 
                 currentLetter.classList.remove("current");
                 currentWord.classList.remove("current");
@@ -258,17 +257,45 @@ document.addEventListener("keydown", ev => {
     changeCursorPosition();
 });
 
+
+
+
+
 if (!localStorage.getItem("words")) {
     fetch("words-en.json")
     .then(response => response.json())
     .then(data => localStorage.setItem("words", data));
 }
 
-// if (!localStorage.getItem("wordsMaps")) {
-    // make typecloud load make the proper way
-    // and make sure it waits for the words to load, then load maps
-    // and only then let user type
+// if (!localStorage.getItem("wordsMap")) {
+//     ///////////
+//     ///////////
+//     ///////////
+//     const data = fetch("wordsMap.json").then(response => response.json());
+//     console.log(data);
 // }
+
+// idea instead of wordsMap
+// i don't need to store a map
+// what if a would have two arrays instead
+// of 26 chars in length
+// that would store mistakes made
+// the others store letters in total
+// it would keep storing it till the end of line
+// once previous words get deleted
+// i will make a record to the localStorage
+// that will update current user results in there
+// and typecloud would immediately draw new words
+// with this knowledge in mind
+
+
+// make a testcase where once in 50-100 words
+// you can get a orange color word
+// containing different symbols like `%@#%(*%#@)
+// make sure they are the ones which the user struggle to type
+// and i want it to be of an orange color
+// so it would stick out
+// and be like a legendary testcase
 
 const words = localStorage.getItem("words").split(",");
 const wordsLength = words.length;
@@ -308,3 +335,5 @@ const timeRanges = [15, 30, 60, 120];
 // like 600px or something
 // so what if the design would be: 
 // the input on the left, and (something) on the right;
+
+// const data = localStorage.getItem("")
