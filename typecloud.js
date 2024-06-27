@@ -46,8 +46,7 @@ class Queue {
     }
 }
 
-function getRandomWord() {
-    const randomIndex = Math.floor(Math.random() * wordsLength);
+function getRandomWord(randomIndex) {
     const randomWord = words[randomIndex];
     const randomWordLength = randomWord.length;
 
@@ -85,10 +84,74 @@ function changeCursorPosition() {
 }
 
 function generateWords() {
+    const greedyArray = calculateProbabilities();
+    if (greedyArray[25] == 0) {
+        regularRandomAlgorithm();
+    } else {
+        typecloud(greedyArray);
+    }
+}
+
+function regularRandomAlgorithm() {
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
-        const word = getRandomWord();
+        const randomIndex = Math.floor(Math.random() * wordsLength);
+        const word = getRandomWord(randomIndex);
         wordsList.appendChild(word);
     }
+}
+
+function typecloud(greedyArray) {
+    const totalProbabilitiesSum = greedyArray[25];
+    while (wordsList.scrollHeight <= wordsList.clientHeight) {
+        const letterArray = getLetter(totalProbabilitiesSum, greedyArray);
+        const randomIndex = getWordIndex(letterArray);
+        const word = getRandomWord(randomIndex);
+        wordsList.appendChild(word);
+    }
+}
+
+function getLetter(totalProbabilitiesSum, greedyArray) {
+    const randomValue = Math.random() * totalProbabilitiesSum;
+    let letterIndex = 0;
+    let left = 0;
+    let right = 25;
+    while (left <= right) {
+        let mid = Math.floor((left + right) / 2);
+        if (greedyArray[mid] <= randomValue) {
+            letterIndex = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+
+    return wordsIndexes[letterIndex];
+}
+
+function getWordIndex(letterArray) {
+    const length = letterArray.length;
+    const wordIndex = Math.floor(Math.random() * length);
+    return wordIndex;
+}
+
+function calculateProbabilities() {
+    let totalProbabilitiesSum = 0;
+    const greedyArray = [];
+    for (let i = 0; i < 26; ++i) {
+        const letter = letters[i];
+        const lettersTotalCount = parseInt(localStorage.getItem(letter + "Total"));
+        if (lettersTotalCount == 0) {
+            greedyArray.push(totalProbabilitiesSum);
+            continue;
+        }
+
+        const lettersWrongCount = parseInt(localStorage.getItem(letter + "Wrong"));
+        const lettersProbability = lettersWrongCount / lettersTotalCount;
+        totalProbabilitiesSum += lettersProbability;
+        greedyArray.push(totalProbabilitiesSum);
+    }
+
+    return greedyArray;
 }
 
 function uploadLettersCount() {
@@ -99,15 +162,12 @@ function uploadLettersCount() {
     // and it does nothing in this case
     // i need to take the comparing cursor's position height
     // in a separate function to optimize
-    let index = 97;
     for (let i = 0; i < 26; ++i) {
         if (!rightLettersCount[i]) {
             continue;
         }
-        
-        const letter = String.fromCharCode(index);
-        ++index;
 
+        const letter = letters[i];
         const totalKey = letter + "Total";
         const letterTotalCount = parseInt(localStorage.getItem(totalKey));
         localStorage.setItem(totalKey, letterTotalCount + rightLettersCount[i]);
@@ -367,10 +427,8 @@ async function loadWordsIndexes() {
     const wordsIndexes = await response.json();
     console.log(wordsIndexes);
 
-    let index = 97;
     for (let i = 0; i < 26; ++i) {
-        console.log(wordsIndexes[i])
-        const letter = String.fromCharCode(index);
+        const letter = letters[i];
         localStorage.setItem(letter + "Letters", wordsIndexes[i]);
         ++index;
     }
@@ -391,6 +449,12 @@ let wrongLettersCount = [];
 for (let i = 0; i < 26; ++i) {
     rightLettersCount.push(Number(0));
     wrongLettersCount.push(Number(0));
+}
+
+const wordsIndexes = [];
+for (const letter of letters) {
+    const keyLetters = localStorage.getItem(letter + "Letters").split(",");
+    wordsIndexes.push(keyLetters);
 }
 
 const wordsQueue = newGame();
@@ -433,3 +497,22 @@ const timeRanges = [15, 30, 60, 120];
 // maybe it is a good idea
 // to make like "epic", "legendary" testcases
 // like in Gwent
+
+
+// i think i'm doing the typecloud algorithm wrong
+// because at the moment typecloud stores all your stats
+// throughout the whole time i have been using it
+// and if for example you have been typing "e" wrong a lot before
+// but right now it's not true;
+// you would still keep getting testcases to type "e"
+//
+// so maybe i should rewrite an algorithm to linked list??
+// so it would store your last typed 500 words for example
+// so it would be dynamic and more up to date
+// but the problem arises... how can i store a linked list in a localStorage?
+// maybe i should "encode" it a bit
+// so then i could get the localStorage string
+// separate by "," to differentiate different words
+// and then do custom split to the data inside word
+// and with every line typed it would be updated
+// and stored in localStorage again
