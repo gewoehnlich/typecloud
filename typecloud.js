@@ -48,39 +48,35 @@ class Queue {
 
 function getRandomWord(randomIndex) {
     const randomWord = words[randomIndex];
-    const randomWordLength = randomWord.length;
+    const randomWordLength = randomWord.length + 1;
 
     const word = document.createElement("div");
     word.classList.add("word");
 
+    for (let i = 0; i < randomWordLength; ++i) {
+        const letter = document.createElement("span");
+        letter.classList.add("letter");
+        letter.textContent = randomWord[i];
+        word.appendChild(letter);
+    }
+    
     const randomSymbol = getRandomSymbol();
     const symbol = document.createElement("span");
     symbol.classList.add("letter", "symbol");
     symbol.textContent = randomSymbol;
-    const symbolsIndex = Math.floor(Math.random() * randomWordLength);
-
-    for (let i = 0; i < symbolsIndex; ++i) {
-        const letter = document.createElement("span");
-        letter.classList.add("letter");
-        letter.textContent = randomWord[i];
-        word.appendChild(letter);
-    }
-
     word.appendChild(symbol);
 
-    for (let i = symbolsIndex; i < randomWordLength; ++i) {
-        const letter = document.createElement("span");
-        letter.classList.add("letter");
-        letter.textContent = randomWord[i];
-        word.appendChild(letter);
-    }
-
-    const space = document.createElement("span");
-    space.classList.add("letter");
-    space.classList.add("space");
+    const space = getSpaceElement();
     word.appendChild(space);
 
     return word;
+}
+
+function getSpaceElement() {
+    const space = document.createElement("span");
+    space.classList.add("letter");
+    space.classList.add("space");
+    return space;
 }
 
 function getRandomSymbol() {
@@ -123,15 +119,41 @@ function regularRandomAlgorithm() {
 }
 
 function typecloud(greedyArray) {
-    const totalProbabilitiesSum = greedyArray[25];
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
-        const letterArray = getLetter(totalProbabilitiesSum, greedyArray);
-        const randomIndex = getWordIndex(letterArray);
-        const word = getRandomWord(randomIndex);
-        wordsList.appendChild(word);
+        const randomValue = Math.random();
+        if (randomValue <= 0.02) {
+            generateSymbolsWord();
+        } else if (randomValue <= 0.08) {
+            generateNumbersWord();
+        } else {
+            generateRegularWord(greedyArray);
+        }
+    }
+}
+
+function generateRegularWord(greedyArray) {
+    const totalProbabilitiesSum = greedyArray[25];
+    const letterArray = getLetter(totalProbabilitiesSum, greedyArray);
+    const randomIndex = getWordIndex(letterArray);
+    const word = getRandomWord(randomIndex);
+    wordsList.appendChild(word);
+}
+
+function generateNumbersWord() {
+    const numbersWord = document.createElement("div");
+    numbersWord.classList.add("word", "numbers");
+
+    const numbersWordLength = Math.ceil(Math.random() * 11);
+    for (let i = 0; i < numbersWordLength; ++i) {
+        const number = document.createElement("span");
+        number.classList.add("letter", "number");
+        number.textContent = numbers[Math.floor(Math.random() * 10)];
+        numbersWord.appendChild(number);
     }
 
-    // generateSymbolsWord();
+    const space = getSpaceElement();
+    numbersWord.appendChild(space);
+    wordsList.appendChild(numbersWord);
 }
 
 function generateSymbolsWord() {
@@ -147,6 +169,8 @@ function generateSymbolsWord() {
         symbolsWord.appendChild(symbol);
     }
 
+    const space = getSpaceElement();
+    symbolsWord.appendChild(space);
     wordsList.appendChild(symbolsWord);
 }
 
@@ -427,11 +451,13 @@ const words = localStorage.getItem("words").split(",");
 const wordsLength = words.length;
 const wordsList = document.getElementById('wordsList');
 const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
-const symbols = ['!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', 
-    ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~'];
+const symbols = ['!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^',
+     '_', '`', '{', '|', '}', '~', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
 const symbolsLength = symbols.length;
+const numbersLength = 10;
 
 let maxResultValues = [];
 for (const result of maxResultIds) {
@@ -590,3 +616,5 @@ const timeRanges = [15, 30, 60, 120];
 // right now i have a problem with implementing generateSymbolsWord();
 // it gets called much more times, than i expected
 // i have to investigate what it causing such a behavior
+
+// make numbers only testcases
