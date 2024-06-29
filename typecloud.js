@@ -53,7 +53,22 @@ function getRandomWord(randomIndex) {
     const word = document.createElement("div");
     word.classList.add("word");
 
-    for (let i = 0; i < randomWordLength; ++i) {
+    const randomSymbol = getRandomSymbol();
+    const symbol = document.createElement("span");
+    symbol.classList.add("letter", "symbol");
+    symbol.textContent = randomSymbol;
+    const symbolsIndex = Math.floor(Math.random() * randomWordLength);
+
+    for (let i = 0; i < symbolsIndex; ++i) {
+        const letter = document.createElement("span");
+        letter.classList.add("letter");
+        letter.textContent = randomWord[i];
+        word.appendChild(letter);
+    }
+
+    word.appendChild(symbol);
+
+    for (let i = symbolsIndex; i < randomWordLength; ++i) {
         const letter = document.createElement("span");
         letter.classList.add("letter");
         letter.textContent = randomWord[i];
@@ -68,6 +83,11 @@ function getRandomWord(randomIndex) {
     return word;
 }
 
+function getRandomSymbol() {
+    const randomIndex = Math.floor(Math.random() * symbolsLength);
+    return symbols[randomIndex];
+}
+
 function changeCursorPosition() {
     const nextLetter = document.querySelector(".letter.current");
     const cursor = document.getElementById("cursor");
@@ -75,7 +95,9 @@ function changeCursorPosition() {
     cursor.style.top = nextLetter.getBoundingClientRect().top + "px";
     cursor.style.left = nextLetter.getBoundingClientRect().left + "px";
 
+    // console.log(previousTop, cursor.style.top);
     if (previousTop != cursor.style.top) {
+        // console.log('fwe')
         deletePreviousWords();
         changeCursorPosition();
         generateWords();
@@ -108,6 +130,24 @@ function typecloud(greedyArray) {
         const word = getRandomWord(randomIndex);
         wordsList.appendChild(word);
     }
+
+    // generateSymbolsWord();
+}
+
+function generateSymbolsWord() {
+    const extraSymbolsLength = Math.floor(Math.random() * 4);
+    const symbolsWordLength = 9 + extraSymbolsLength;
+
+    const symbolsWord = document.createElement("div");
+    symbolsWord.classList.add("word", "symbols");
+    for (let i = 0; i < symbolsWordLength; ++i) {
+        const symbol = document.createElement("span");
+        symbol.classList.add("letter", "symbol");
+        symbol.textContent = symbols[Math.floor(Math.random() * symbolsLength)];
+        symbolsWord.appendChild(symbol);
+    }
+
+    wordsList.appendChild(symbolsWord);
 }
 
 function getLetter(totalProbabilitiesSum, greedyArray) {
@@ -336,6 +376,10 @@ document.addEventListener("keydown", ev => {
                 nextWord.classList.add("current");
                 const nextLetter = nextWord.firstChild;
                 nextLetter.classList.add("current");
+
+                // if (currentWord.classList.contains("symbols")) {
+                //     generateSymbolsWord();
+                // }
             }
         }
     } else {
@@ -383,8 +427,11 @@ const words = localStorage.getItem("words").split(",");
 const wordsLength = words.length;
 const wordsList = document.getElementById('wordsList');
 const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+const symbols = ['!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', 
+    ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~'];
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
+const symbolsLength = symbols.length;
 
 let maxResultValues = [];
 for (const result of maxResultIds) {
@@ -516,3 +563,30 @@ const timeRanges = [15, 30, 60, 120];
 // and then do custom split to the data inside word
 // and with every line typed it would be updated
 // and stored in localStorage again
+
+// here is another idea for typecloud
+// make two modes for it
+// the first should incourage people to type as accurate as possible
+// the purpose of this is to teach user how to type properly
+// and the second mode would get activated
+// when user accuracy was good enough for some time
+// so now he has to be typing as fast as he can
+//
+// make so for the first mode he would get panished twice per mistake
+// meaning wrongCount would be not +1, but +2 for example
+// and for the second mode he would not get panished at all
+
+// make so for the accuracy mode the symbols would be placed randomly
+// at any position in a word
+// for the speed mode they would be either at the beginning or at the end
+
+// maybe color every letter that a user has to press with a different color?
+// like there are 8 fingers you have to use to type, right?
+// so maybe instead of just dark grey text, make different tones of it for every finger?
+// so it would be more clear what finger to use to type a letter
+
+// learn how to use google chrome javascript debugger
+// it's going to be much easier so debug code
+// right now i have a problem with implementing generateSymbolsWord();
+// it gets called much more times, than i expected
+// i have to investigate what it causing such a behavior
