@@ -48,7 +48,7 @@ class Queue {
 
 function getRandomWord(randomIndex) {
     const randomWord = words[randomIndex];
-    const randomWordLength = randomWord.length + 1;
+    const randomWordLength = randomWord.length;
 
     const word = document.createElement("div");
     word.classList.add("word");
@@ -56,7 +56,12 @@ function getRandomWord(randomIndex) {
     for (let i = 0; i < randomWordLength; ++i) {
         const letter = document.createElement("span");
         letter.classList.add("letter");
-        letter.textContent = randomWord[i];
+        if (!capsLockCount) {
+            letter.textContent = randomWord[i];
+        } else {
+            letter.textContent = convertLetterToUpper(randomWord[i]);
+        }
+
         word.appendChild(letter);
     }
     
@@ -69,7 +74,23 @@ function getRandomWord(randomIndex) {
     const space = getSpaceElement();
     word.appendChild(space);
 
+    if (!capsLockCount) {
+        const firstCharRandom = Math.random();
+        if (firstCharRandom <= 0.3) {
+            // const firstChar = word.firstChild.textContent;
+            word.firstChild.textContent = convertLetterToUpper(word.firstChild.textContent);
+        }        
+    } else {
+        --capsLockCount;
+    }
+
     return word;
+}
+
+function convertLetterToUpper(letter) {
+    const charAscii = letter.charCodeAt(0);
+    const upperLetter = String.fromCharCode(charAscii - 32);
+    return upperLetter;
 }
 
 function getSpaceElement() {
@@ -91,9 +112,7 @@ function changeCursorPosition() {
     cursor.style.top = nextLetter.getBoundingClientRect().top + "px";
     cursor.style.left = nextLetter.getBoundingClientRect().left + "px";
 
-    // console.log(previousTop, cursor.style.top);
     if (previousTop != cursor.style.top) {
-        // console.log('fwe')
         deletePreviousWords();
         changeCursorPosition();
         generateWords();
@@ -121,11 +140,16 @@ function regularRandomAlgorithm() {
 function typecloud(greedyArray) {
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomValue = Math.random();
-        if (randomValue <= 0.02) {
+        if (randomValue <= 0.075) {
             generateSymbolsWord();
-        } else if (randomValue <= 0.08) {
+        } else if (randomValue <= 0.125) {
             generateNumbersWord();
         } else {
+            if (randomValue <= 0.2) {
+                const extraCapsLockCount = Math.ceil(Math.random() * 3);
+                capsLockCount += 1 + extraCapsLockCount;
+            }
+
             generateRegularWord(greedyArray);
         }
     }
@@ -143,7 +167,7 @@ function generateNumbersWord() {
     const numbersWord = document.createElement("div");
     numbersWord.classList.add("word", "numbers");
 
-    const numbersWordLength = Math.ceil(Math.random() * 11);
+    const numbersWordLength = Math.ceil(Math.random() * 10) + 1;
     for (let i = 0; i < numbersWordLength; ++i) {
         const number = document.createElement("span");
         number.classList.add("letter", "number");
@@ -298,7 +322,7 @@ function calculateTimeRanges() {
             }
         }
         
-        /////
+        ///// it would be better to make it in a separate function
         const resultElement = document.getElementById(timeRangeIds[i]);
         resultElement.textContent = wordsQueue[valuesList[i]];
     }
@@ -400,10 +424,6 @@ document.addEventListener("keydown", ev => {
                 nextWord.classList.add("current");
                 const nextLetter = nextWord.firstChild;
                 nextLetter.classList.add("current");
-
-                // if (currentWord.classList.contains("symbols")) {
-                //     generateSymbolsWord();
-                // }
             }
         }
     } else {
@@ -439,13 +459,7 @@ if (!localStorage.getItem("words")) {
 
 
 
-// make a testcase where once in 50-100 words
-// you can get a orange color word
-// containing different symbols like `%@#%(*%#@)
-// make sure they are the ones which the user struggle to type
-// and i want it to be of an orange color
-// so it would stick out
-// and be like a legendary testcase
+
 
 const words = localStorage.getItem("words").split(",");
 const wordsLength = words.length;
@@ -454,6 +468,7 @@ const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'
 const symbols = ['!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^',
      '_', '`', '{', '|', '}', '~', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+const caps_letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
 const symbolsLength = symbols.length;
@@ -530,6 +545,7 @@ for (const letter of letters) {
     wordsIndexes.push(keyLetters);
 }
 
+let capsLockCount = 0;
 const wordsQueue = newGame();
 const valuesList = wordsQueue.valuesList;
 const pointersList = wordsQueue.pointersList;
@@ -618,3 +634,40 @@ const timeRanges = [15, 30, 60, 120];
 // i have to investigate what it causing such a behavior
 
 // make numbers only testcases
+
+// make a dynamic coefficients for symbols and numbers
+// meaning if i just got a symbols word
+// the chance of drawing another symbols word drops to 0
+// and increases with every roll
+// the same with numbers too
+
+// make a reset() function
+// that would allow user to, well, reset every variable
+
+
+
+
+
+// i have an better idea for typecloud
+// but i need to rewrite everything
+// the idea is: 
+// at the point how typecloud works right now
+// it is possible to type on typecloud for a very long time
+// and for example a month ago a user had problem with typing "e"
+// and he made a lot of mistakes on it
+// but at the current momemt, it could be his best letter
+// though he would still get a lot of "e" testcases
+// since typecloud looks at his all time results
+// and sees he has problems with 'e' the most
+//
+// my point is: i should rewrite the typecloud algorithm
+// to be more dynamic
+// how can i do that?
+// i make a queue, that would store user's last 500 words or so
+// the queue will contain:
+// 1) 500 words
+// 2) the array of 128 char length 
+//      (to fit all the characters from ascii table)
+//      that will contain all his wrong events
+// 3) the same array, but for total letters count
+// ... and something else, that i don't have an idea at the moment
