@@ -46,9 +46,83 @@ class Queue {
     }
 }
 
+class tcNode {
+    constructor(word) {
+        this.word = word;
+    }
+}
+
+class tcQueue {
+    constructor() {
+        this.head = null;
+        this.end = null;
+        this.length = 0;
+
+        const words = localStorage.getItem("tcWords");
+        if (!words) {
+            localStorage.setItem("tcWords", "");
+        } else {
+            const wordsArray = words.split(",");
+            const wordsArrayLength = wordsArray.length;
+
+            const headNode = new tcNode(wordsArray[0]);
+            this.head = headNode;
+            this.end = headNode;
+            this.length += 1;
+
+            for (let i = 1; i < wordsArrayLength; ++i) {
+                const newNode = new tcNode(wordsArray[i]);
+                this.end.next = newNode;
+                this.end = this.end.next;
+                this.length += 1;
+            }
+        }
+
+        this.totalCount = localStorage.getItem("tcTotalCount")?.split(",");
+        if (!this.totalCount) {
+            this.totalCount = getTCArray();
+            localStorage.setItem("tcTotalCount", this.totalCount);
+        }
+
+        this.wrongCount = localStorage.getItem("tcWrongCount")?.split(",");
+        if (!this.wrongCount) {
+            this.wrongCount = getTCArray();
+            localStorage.setItem("tcWrongCount", this.wrongCount);
+        }
+    }
+
+    // add(word) {
+    //     if (!this.head) {
+    //         const node = new tcNode(word);
+    //         this.head = 
+    //     }
+    // }
+}
+
+function getTCArray() {
+    const array = [];
+    for (let i = 0; i < 127; ++i) {
+        array.push(Number(0));
+    }
+
+    return array;
+}
+
 function getRandomWord(randomIndex) {
     const randomWord = words[randomIndex];
     const randomWordLength = randomWord.length;
+    if (!TCQueue.head) {
+        const node = new tcNode(randomWord);
+        TCQueue.head = node;
+        TCQueue.end = node;
+    } else {
+        TCQueue.end.next = new tcNode(randomWord);
+        TCQueue.end = TCQueue.end.next; 
+    }
+
+    while (TCQueue.length > 500) {
+        TCQueue.head = TCQueue.head.next;
+    }
 
     const word = document.createElement("div");
     word.classList.add("word");
@@ -105,6 +179,33 @@ function getRandomSymbol() {
     return symbols[randomIndex];
 }
 
+function reset() {
+    // deleteLocalStorageRecords()
+    // makeLocalStorageRecords()
+
+
+    // well, it should reset every variable in localStorage
+    // and make sure my code is able to check validity of variable in localStorage
+    // and the beginning of a session in typecloud
+}
+
+function makeTCQueueRecords() {
+    let tcWords = "";
+    let curr = TCQueue.head;
+    while (curr) {
+        tcWords += curr.word + ",";
+        curr = curr.next;
+    }
+
+    if (tcWords != "") {
+        tcWords = tcWords.slice(0, -1);
+    }
+
+    localStorage.setItem("tcWords", tcWords);
+    localStorage.setItem("tcWrongCount", TCQueue.wrongCount);
+    localStorage.setItem("tcTotalCount", TCQueue.totalCount);
+}
+
 function changeCursorPosition() {
     const nextLetter = document.querySelector(".letter.current");
     const cursor = document.getElementById("cursor");
@@ -113,17 +214,17 @@ function changeCursorPosition() {
     cursor.style.left = nextLetter.getBoundingClientRect().left + "px";
 
     if (previousTop != cursor.style.top) {
+        makeTCQueueRecords();
         deletePreviousWords();
         changeCursorPosition();
         generateWords();
-        uploadLettersCount();
     }
 }
 
 function generateWords() {
     const greedyArray = calculateProbabilities();
     if (greedyArray[25] == 0) {
-        regularRandomAlgorithm();
+        regularRandomAlgorithm();                            ////////////////////////////
     } else {
         typecloud(greedyArray);
     }
@@ -198,7 +299,7 @@ function generateSymbolsWord() {
     wordsList.appendChild(symbolsWord);
 }
 
-function getLetter(totalProbabilitiesSum, greedyArray) {
+function getLetter(totalProbabilitiesSum, greedyArray) {                    /////////// there should be more descriptive name for a function
     const randomValue = Math.random() * totalProbabilitiesSum;
     let letterIndex = 0;
     let left = 0;
@@ -222,7 +323,7 @@ function getWordIndex(letterArray) {
     return wordIndex;
 }
 
-function calculateProbabilities() {
+function calculateProbabilities() {                                    /////////// there should be more descriptive name for a function
     let totalProbabilitiesSum = 0;
     const greedyArray = [];
     for (let i = 0; i < 26; ++i) {
@@ -242,42 +343,12 @@ function calculateProbabilities() {
     return greedyArray;
 }
 
-function uploadLettersCount() {
-    // not optimal, there is a way to improve
-    // this function is called from changeCursorPosition()
-    // which is called at the start
-    // which then triggers this function
-    // and it does nothing in this case
-    // i need to take the comparing cursor's position height
-    // in a separate function to optimize
-    for (let i = 0; i < 26; ++i) {
-        if (!rightLettersCount[i]) {
-            continue;
-        }
-
-        const letter = letters[i];
-        const totalKey = letter + "Total";
-        const letterTotalCount = parseInt(localStorage.getItem(totalKey));
-        localStorage.setItem(totalKey, letterTotalCount + rightLettersCount[i]);
-        rightLettersCount[i] = 0;
-
-        if (!wrongLettersCount[i]) {
-            continue;
-        }
-
-        const wrongKey = letter + "Wrong";
-        const letterWrongCount = parseInt(localStorage.getItem(wrongKey));
-        localStorage.setItem(wrongKey, letterWrongCount + wrongLettersCount[i]);
-        wrongLettersCount[i] = 0; 
-    }
-}
-
 function newGame() {
     const wordsQueue = new Queue();
-    generateWords();
+    generateWords();                                              ////////
     setCurrent();
     setMaxResult();
-    changeCursorPosition();
+    changeCursorPosition();                                         //////////
 
     return wordsQueue;
 }
@@ -301,7 +372,7 @@ function setCurrent() {
     firstLetter.classList.add('current');
 }
 
-function calculateTimeRanges() {
+function calculateTimeRanges() {                                   /////////// there should be more descriptive name for a function
     const timeNow = Date.now();
     for (let i = 3; i >= 0; --i) {
         if (i != 3 && wordsQueue[valuesList[i + 1]] < wordsQueue[valuesList[i]]) {
@@ -332,7 +403,7 @@ function registerWord(currentWord) {
     const length = currentWord.childNodes.length;
     wordsQueue.add(length);
 
-    const word = extractWord(currentWord);
+    const word = extractWord(currentWord);                             /////////// there should be more descriptive name for a function
     countRightLetters(word);
 }
 
@@ -347,9 +418,10 @@ function extractWord(currentWord) {
     return word;
 }
 
-function countRightLetters(word) {
+function countRightLetters(word) {                               ////////////////////////
     for (const letter of word) {
-        ++rightLettersCount[letter.charCodeAt(0) - 97];
+        const letterAscii = letter.charCodeAt(0);
+        ++TCQueue.totalCount[letterAscii];
     }
 }
 
@@ -442,8 +514,9 @@ document.addEventListener("keydown", ev => {
                 currentLetter.classList.remove("current");
                 nextLetter.classList.add('current');
             }
-
-            ++wrongLettersCount[currentLetter.textContent.charCodeAt(0) - 97];
+            
+            const letterAscii = currentLetter.textContent.charCodeAt(0);
+            ++TCQueue.wrongCount[letterAscii];
         }
     }
 
@@ -487,7 +560,7 @@ for (const result of maxResultIds) {
 
 // let wordsIndexes;
 for (const letter of letters) {
-    if (!localStorage.getItem(letter + "Wrong")) {
+    if (!localStorage.getItem(letter + "Wrong")) {                                       ////////////////////////////////
         localStorage.setItem(letter + "Wrong", 0);
     }
 
@@ -532,13 +605,6 @@ if (!localStorage.getItem("aLetters")) {
 // so there some work to be done
 // to rewrite this part of the code
 
-let rightLettersCount = [];
-let wrongLettersCount = [];
-for (let i = 0; i < 26; ++i) {
-    rightLettersCount.push(Number(0));
-    wrongLettersCount.push(Number(0));
-}
-
 const wordsIndexes = [];
 for (const letter of letters) {
     const keyLetters = localStorage.getItem(letter + "Letters").split(",");
@@ -546,6 +612,7 @@ for (const letter of letters) {
 }
 
 let capsLockCount = 0;
+const TCQueue = new tcQueue();
 const wordsQueue = newGame();
 const valuesList = wordsQueue.valuesList;
 const pointersList = wordsQueue.pointersList;
@@ -671,3 +738,9 @@ const timeRanges = [15, 30, 60, 120];
 //      that will contain all his wrong events
 // 3) the same array, but for total letters count
 // ... and something else, that i don't have an idea at the moment
+
+// make so if a user makes a mistake in a word
+// it would be drawn the very next time a new word needs to be drawn
+// so the user would get the same exact word 
+// a required number of times before it will type in the right way
+// without making any mistake
