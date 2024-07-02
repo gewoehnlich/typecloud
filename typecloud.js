@@ -179,15 +179,6 @@ function getRandomSymbol() {
     return symbols[randomIndex];
 }
 
-function reset() {
-    // deleteLocalStorageRecords()
-    // makeLocalStorageRecords()
-
-
-    // well, it should reset every variable in localStorage
-    // and make sure my code is able to check validity of variable in localStorage
-    // and the beginning of a session in typecloud
-}
 
 function makeTCQueueRecords() {
     let tcWords = "";
@@ -523,20 +514,51 @@ document.addEventListener("keydown", ev => {
     changeCursorPosition();
 });
 
-if (!localStorage.getItem("words")) {
-    //////
-    fetch("words-en.json")
-    .then(response => response.json())
-    .then(data => localStorage.setItem("words", data));
+
+
+async function makeLocalStorageRecordsIfNeeded() {
+    async function loadWords() {
+        const response = await fetch("words-en.json");
+        const words = await response.json();
+        return words;
+    }
+
+    async function loadWordsIndexes() {
+        const response = await fetch("wordsIndexes.json");
+        const wordsIndexesData = await response.json();
+        console.log(wordsIndexesData);
+        return wordsIndexesData;
+    }
+
+    let words;
+    if (!localStorage.getItem("words")) {
+        words = await loadWords();
+        localStorage.setItem("words", words);
+    }
+
+    let wordsIndexes;
+    for (let i = 0; i < 26; ++i) {
+        const letter = letters[i];
+        if (!localStorage.getItem(letter + "LetterWords")) {
+            if (!wordsIndexes) {
+                wordsIndexes = await loadWordsIndexes();
+            }
+
+            localStorage.setItem(letter + "LetterWords", wordsIndexes[i]);
+        }
+    }
+
+    if (wordsIndexes || words) {
+        location.reload();
+    }
 }
 
 
 
 
 
-const words = localStorage.getItem("words").split(",");
-const wordsLength = words.length;
-const wordsList = document.getElementById('wordsList');
+
+
 const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 const symbols = ['!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^',
      '_', '`', '{', '|', '}', '~', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -546,6 +568,18 @@ const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwo
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
 const symbolsLength = symbols.length;
 const numbersLength = 10;
+const lettersLength = 26;
+const caps_lettersLength = 26;
+
+
+
+makeLocalStorageRecordsIfNeeded();
+
+const words = localStorage.getItem("words").split(",");
+const wordsLength = words.length;
+const wordsList = document.getElementById('wordsList');
+
+
 
 let maxResultValues = [];
 for (const result of maxResultIds) {
@@ -558,56 +592,14 @@ for (const result of maxResultIds) {
     }
 }
 
-// let wordsIndexes;
-for (const letter of letters) {
-    if (!localStorage.getItem(letter + "Wrong")) {                                       ////////////////////////////////
-        localStorage.setItem(letter + "Wrong", 0);
-    }
-
-    if (!localStorage.getItem(letter + "Total")) {
-        localStorage.setItem(letter + "Total", 0);
-    }
-
-    // if (!localStorage.getItem(letter + "Letters")) {
-    //     if (!wordsIndexes) {
-    //         promise = 
-    //             fetch("wordsIndexes.json")
-    //             .then(response => response.json())
-    //             .then(data => wordsIndexes = data);
-    //     }
-    // }
-}
-
 // make it a different function
 // that will make sure all data is available for the user
 // so even when the user deletes something frpm localStorage
 // it would be restored the next time he opena up typecloud
 
-async function loadWordsIndexes() {
-    const response = await fetch("wordsIndexes.json");
-    const wordsIndexes = await response.json();
-    console.log(wordsIndexes);
-
-    for (let i = 0; i < 26; ++i) {
-        const letter = letters[i];
-        localStorage.setItem(letter + "Letters", wordsIndexes[i]);
-        ++index;
-    }
-}
-
-if (!localStorage.getItem("aLetters")) {
-    loadWordsIndexes();
-}
-
-// i have to rewrite all the Promise function
-// through this async await way
-// i finally understood how it works (i think)
-// so there some work to be done
-// to rewrite this part of the code
-
 const wordsIndexes = [];
 for (const letter of letters) {
-    const keyLetters = localStorage.getItem(letter + "Letters").split(",");
+    const keyLetters = localStorage.getItem(letter + "LetterWords").split(",");
     wordsIndexes.push(keyLetters);
 }
 
@@ -707,10 +699,6 @@ const timeRanges = [15, 30, 60, 120];
 // the chance of drawing another symbols word drops to 0
 // and increases with every roll
 // the same with numbers too
-
-// make a reset() function
-// that would allow user to, well, reset every variable
-
 
 
 
