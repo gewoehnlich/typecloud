@@ -108,57 +108,79 @@ function getTCArray() {
     return array;
 }
 
-function getRandomWord(randomIndex) {
-    const randomWord = words[randomIndex];
-    const randomWordLength = randomWord.length;
-    if (!TCQueue.head) {
-        const node = new tcNode(randomWord);
+function makeTCQueueWordRecord(word) {
+    if (!TCQueue.head) {                                       ///////////
+        const node = new tcNode(word);
         TCQueue.head = node;
         TCQueue.end = node;
     } else {
-        TCQueue.end.next = new tcNode(randomWord);
+        TCQueue.end.next = new tcNode(word);
         TCQueue.end = TCQueue.end.next; 
     }
 
     while (TCQueue.length > 500) {
         TCQueue.head = TCQueue.head.next;
     }
+}
 
-    const word = document.createElement("div");
-    word.classList.add("word");
-
+function makeCapsLockWord(wordElement, randomWord) {
+    const randomWordLength = randomWord.length;
     for (let i = 0; i < randomWordLength; ++i) {
         const letter = document.createElement("span");
         letter.classList.add("letter");
-        if (!capsLockCount) {
-            letter.textContent = randomWord[i];
-        } else {
-            letter.textContent = convertLetterToUpper(randomWord[i]);
-        }
+        letter.textContent = convertLetterToUpper(randomWord[i]);
 
-        word.appendChild(letter);
+        wordElement.appendChild(letter);
     }
-    
+
+    addSymbolAndSpaceElements(wordElement);
+}
+
+function makeRegularWord(wordElement, randomWord) {
+    const randomWordLength = randomWord.length;
+    for (let i = 0; i < randomWordLength; ++i) {
+        const letter = document.createElement("span");
+        letter.classList.add("letter");
+        letter.textContent = randomWord[i];
+
+        wordElement.appendChild(letter);
+    }
+
+    addSymbolAndSpaceElements(wordElement);
+}
+
+function addSymbolAndSpaceElements(wordElement) {
     const randomSymbol = getRandomSymbol();
     const symbol = document.createElement("span");
     symbol.classList.add("letter", "symbol");
     symbol.textContent = randomSymbol;
-    word.appendChild(symbol);
+    wordElement.appendChild(symbol);
 
     const space = getSpaceElement();
-    word.appendChild(space);
+    wordElement.appendChild(space);    
+}
 
-    if (!capsLockCount) {
-        const firstCharRandom = Math.random();
-        if (firstCharRandom <= 0.3) {
-            // const firstChar = word.firstChild.textContent;
-            word.firstChild.textContent = convertLetterToUpper(word.firstChild.textContent);
-        }        
-    } else {
+function getRandomWord(lettersArray) {
+    const randomIndex = Math.floor(Math.random() * lettersArray.length);
+    const randomWord = words[randomIndex];
+
+    makeTCQueueWordRecord(randomWord);
+
+    const wordElement = document.createElement("div");
+    wordElement.classList.add("word");
+
+    if (capsLockCount) {
+        makeCapsLockWord(wordElement, randomWord);
         --capsLockCount;
+    } else {
+        makeRegularWord(wordElement, randomWord);
+        const firstCharRandom = (Math.random() <= 0.3);
+        if (firstCharRandom) {
+            wordElement.firstChild.textContent = convertLetterToUpper(wordElement.firstChild.textContent);
+        }
     }
 
-    return word;
+    return wordElement;
 }
 
 function convertLetterToUpper(letter) {
@@ -213,15 +235,20 @@ function changeCursorPosition() {
 }
 
 function generateWords() {
-    const greedyArray = calculateProbabilities();
-    if (greedyArray[25] == 0) {
-        regularRandomAlgorithm();                            ////////////////////////////
+    const array = getAllLettersMistakesCoefficientArray();
+    const noMistakesWereMadeBefore = (array[25] === 0);
+    if (noMistakesWereMadeBefore) {
+        regularRandomAlgorithm();
     } else {
-        typecloud(greedyArray);
+        typecloud(array);
     }
 }
 
 function regularRandomAlgorithm() {
+    // this is the algorithm that typecloud is going to use
+    // if it's the first time a user logged into typecloud
+    // or he is so good, that he just doesn't make mistakes while typing
+
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomIndex = Math.floor(Math.random() * wordsLength);
         const word = getRandomWord(randomIndex);
@@ -229,7 +256,7 @@ function regularRandomAlgorithm() {
     }
 }
 
-function typecloud(greedyArray) {
+function typecloud(array) {
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomValue = Math.random();
         if (randomValue <= 0.075) {
@@ -238,20 +265,17 @@ function typecloud(greedyArray) {
             generateNumbersWord();
         } else {
             if (randomValue <= 0.2) {
-                const extraCapsLockCount = Math.ceil(Math.random() * 3);
-                capsLockCount += 1 + extraCapsLockCount;
+                capsLockCount += 1 + Math.ceil(Math.random() * 3);
             }
 
-            generateRegularWord(greedyArray);
+            generateRegularWord(array);
         }
     }
 }
 
-function generateRegularWord(greedyArray) {
-    const totalProbabilitiesSum = greedyArray[25];
-    const letterArray = getLetter(totalProbabilitiesSum, greedyArray);
-    const randomIndex = getWordIndex(letterArray);
-    const word = getRandomWord(randomIndex);
+function generateRegularWord(array) {
+    const lettersArray = getProblematicLetter(array);
+    const word = getRandomWord(lettersArray);
     wordsList.appendChild(word);
 }
 
@@ -259,11 +283,11 @@ function generateNumbersWord() {
     const numbersWord = document.createElement("div");
     numbersWord.classList.add("word", "numbers");
 
-    const numbersWordLength = Math.ceil(Math.random() * 10) + 1;
+    const numbersWordLength = Math.ceil(Math.random() * numbersLength) + 1;
     for (let i = 0; i < numbersWordLength; ++i) {
         const number = document.createElement("span");
         number.classList.add("letter", "number");
-        number.textContent = numbers[Math.floor(Math.random() * 10)];
+        number.textContent = numbers[Math.floor(Math.random() * numbersLength)];
         numbersWord.appendChild(number);
     }
 
@@ -290,14 +314,17 @@ function generateSymbolsWord() {
     wordsList.appendChild(symbolsWord);
 }
 
-function getLetter(totalProbabilitiesSum, greedyArray) {                    /////////// there should be more descriptive name for a function
-    const randomValue = Math.random() * totalProbabilitiesSum;
+function getProblematicLetter(array) {
+    // this function determines what letter to draw words from
+
+    const totalLettersCoefficientSum = array[25];
+    const randomValue = Math.random() * totalLettersCoefficientSum;
     let letterIndex = 0;
     let left = 0;
     let right = 25;
     while (left <= right) {
         let mid = Math.floor((left + right) / 2);
-        if (greedyArray[mid] <= randomValue) {
+        if (array[mid] <= randomValue) {
             letterIndex = mid;
             left = mid + 1;
         } else {
@@ -308,30 +335,32 @@ function getLetter(totalProbabilitiesSum, greedyArray) {                    ////
     return wordsIndexes[letterIndex];
 }
 
-function getWordIndex(letterArray) {
-    const length = letterArray.length;
-    const wordIndex = Math.floor(Math.random() * length);
-    return wordIndex;
-}
-
-function calculateProbabilities() {                                    /////////// there should be more descriptive name for a function
-    let totalProbabilitiesSum = 0;
-    const greedyArray = [];
-    for (let i = 0; i < 26; ++i) {
+function getAllLettersMistakesCoefficientArray() {
+    // what this function does is:
+    // for example, a user got in total 10 words with a letter "e" in them
+    // and he made a mistake 3 times trying to type "e" in those words
+    // so, his lettersCoefficient is 3/10 = 0.3
+    // and all of the letters get calculated this way
+    // in order to then use this array to determine what letter is next to work on
+    
+    // the higher the letter's coefficient = the higher the chance to get a word with that letter
+    let seenCoefficientsSum = 0;
+    const array = [];
+    for (let i = 0; i < lettersLength; ++i) {
         const letter = letters[i];
         const lettersTotalCount = parseInt(localStorage.getItem(letter + "Total"));
         if (lettersTotalCount == 0) {
-            greedyArray.push(totalProbabilitiesSum);
+            array.push(seenCoefficientsSum);
             continue;
         }
 
         const lettersWrongCount = parseInt(localStorage.getItem(letter + "Wrong"));
-        const lettersProbability = lettersWrongCount / lettersTotalCount;
-        totalProbabilitiesSum += lettersProbability;
-        greedyArray.push(totalProbabilitiesSum);
+        const lettersCoefficient = lettersWrongCount / lettersTotalCount;
+        seenCoefficientsSum += lettersCoefficient;
+        array.push(seenCoefficientsSum);
     }
 
-    return greedyArray;
+    return array;
 }
 
 function newGame() {
@@ -514,8 +543,6 @@ document.addEventListener("keydown", ev => {
     changeCursorPosition();
 });
 
-
-
 async function makeLocalStorageRecordsIfNeeded() {
     async function loadWords() {
         const response = await fetch("words-en.json");
@@ -553,59 +580,55 @@ async function makeLocalStorageRecordsIfNeeded() {
     }
 }
 
+function getMaxResultValues() {
+    let maxResultValues = [];
+    for (const result of maxResultIds) {
+        const maxResult = localStorage.getItem(result);
+        if (!maxResult) {
+            localStorage.setItem(result, 0);
+            maxResultValues.push(Number(0));
+        } else {
+            maxResultValues.push(parseInt(maxResult));
+        }
+    }
 
+    return maxResultValues;
+}
+
+function getWordIndexes() {
+    const wordsIndexes = [];
+    for (const letter of letters) {
+        const keyLetters = localStorage.getItem(letter + "LetterWords").split(",");
+        wordsIndexes.push(keyLetters);
+    }
+    
+    return wordsIndexes;
+}
 
 
 
 
 
 const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+const lettersLength = 26;
 const symbols = ['!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^',
      '_', '`', '{', '|', '}', '~', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+const symbolsLength = 42;
 const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-const caps_letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+const numbersLength = 10;
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
-const symbolsLength = symbols.length;
-const numbersLength = 10;
-const lettersLength = 26;
-const caps_lettersLength = 26;
-
-
 
 makeLocalStorageRecordsIfNeeded();
-
 const words = localStorage.getItem("words").split(",");
 const wordsLength = words.length;
 const wordsList = document.getElementById('wordsList');
-
-
-
-let maxResultValues = [];
-for (const result of maxResultIds) {
-    const maxResult = localStorage.getItem(result);
-    if (!maxResult) {
-        localStorage.setItem(result, 0);
-        maxResultValues.push(Number(0));
-    } else {
-        maxResultValues.push(parseInt(maxResult));
-    }
-}
-
-// make it a different function
-// that will make sure all data is available for the user
-// so even when the user deletes something frpm localStorage
-// it would be restored the next time he opena up typecloud
-
-const wordsIndexes = [];
-for (const letter of letters) {
-    const keyLetters = localStorage.getItem(letter + "LetterWords").split(",");
-    wordsIndexes.push(keyLetters);
-}
+const maxResultValues = getMaxResultValues();
+const wordsIndexes = getWordIndexes();
 
 let capsLockCount = 0;
-const TCQueue = new tcQueue();
-const wordsQueue = newGame();
+const TCQueue = new tcQueue();  ///////////////////////////////////////////////////////////
+const wordsQueue = newGame(); 
 const valuesList = wordsQueue.valuesList;
 const pointersList = wordsQueue.pointersList;
 const timeRanges = [15, 30, 60, 120];
@@ -616,27 +639,6 @@ const timeRanges = [15, 30, 60, 120];
 // so what if the design would be: 
 // the input on the left, and (something) on the right;
 
-
-
-// rewrite the code to be Promise based
-// so typecloud would download files
-// if it can't find corresponding files in localStorage
-
-
-
-
-// i understood that i have to rewrite all this code
-// i have to move these global variable into newGame() function
-// because with doing it, i am not able to implement promises
-// because i need to have a bunch of promises
-// that would have to check
-// if i need to download any json file
-// and there should be a bigger promise
-// that would make sure all the smaller promises are fullfilled
-// and only then call newGame() function
-// for the user to use typecloud
-
-
 // make so sometimes typecloud instead of regular words
 // would "talk" to the user
 // like "congratulation you have reached *something*! keep it up!"
@@ -645,25 +647,6 @@ const timeRanges = [15, 30, 60, 120];
 // maybe it is a good idea
 // to make like "epic", "legendary" testcases
 // like in Gwent
-
-
-// i think i'm doing the typecloud algorithm wrong
-// because at the moment typecloud stores all your stats
-// throughout the whole time i have been using it
-// and if for example you have been typing "e" wrong a lot before
-// but right now it's not true;
-// you would still keep getting testcases to type "e"
-//
-// so maybe i should rewrite an algorithm to linked list??
-// so it would store your last typed 500 words for example
-// so it would be dynamic and more up to date
-// but the problem arises... how can i store a linked list in a localStorage?
-// maybe i should "encode" it a bit
-// so then i could get the localStorage string
-// separate by "," to differentiate different words
-// and then do custom split to the data inside word
-// and with every line typed it would be updated
-// and stored in localStorage again
 
 // here is another idea for typecloud
 // make two modes for it
@@ -692,40 +675,11 @@ const timeRanges = [15, 30, 60, 120];
 // it gets called much more times, than i expected
 // i have to investigate what it causing such a behavior
 
-// make numbers only testcases
-
 // make a dynamic coefficients for symbols and numbers
 // meaning if i just got a symbols word
 // the chance of drawing another symbols word drops to 0
 // and increases with every roll
 // the same with numbers too
-
-
-
-
-// i have an better idea for typecloud
-// but i need to rewrite everything
-// the idea is: 
-// at the point how typecloud works right now
-// it is possible to type on typecloud for a very long time
-// and for example a month ago a user had problem with typing "e"
-// and he made a lot of mistakes on it
-// but at the current momemt, it could be his best letter
-// though he would still get a lot of "e" testcases
-// since typecloud looks at his all time results
-// and sees he has problems with 'e' the most
-//
-// my point is: i should rewrite the typecloud algorithm
-// to be more dynamic
-// how can i do that?
-// i make a queue, that would store user's last 500 words or so
-// the queue will contain:
-// 1) 500 words
-// 2) the array of 128 char length 
-//      (to fit all the characters from ascii table)
-//      that will contain all his wrong events
-// 3) the same array, but for total letters count
-// ... and something else, that i don't have an idea at the moment
 
 // make so if a user makes a mistake in a word
 // it would be drawn the very next time a new word needs to be drawn
