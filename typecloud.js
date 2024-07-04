@@ -1,4 +1,4 @@
-class Node {
+class TimeNode {
     constructor(val, time) {
         this.val = val;
         this.next = null;
@@ -6,7 +6,7 @@ class Node {
     }
 }
 
-class Queue {
+class TimeQueue {
     constructor() {
         this.end = null;
 
@@ -24,7 +24,7 @@ class Queue {
     }
 
     add(val) {
-        const node = new Node(val, Date.now());
+        const node = new TimeNode(val, Date.now());
 
         if (!this.end) {
             for (let key of this.valuesList) {
@@ -46,13 +46,13 @@ class Queue {
     }
 }
 
-class tcNode {
+class WordNode {
     constructor(word) {
         this.word = word;
     }
 }
 
-class tcQueue {
+class WordQueue {
     constructor() {
         this.head = null;
         this.end = null;
@@ -65,13 +65,13 @@ class tcQueue {
             const wordsArray = words.split(",");
             const wordsArrayLength = wordsArray.length;
 
-            const headNode = new tcNode(wordsArray[0]);
+            const headNode = new WordNode(wordsArray[0]);
             this.head = headNode;
             this.end = headNode;
             this.length += 1;
 
             for (let i = 1; i < wordsArrayLength; ++i) {
-                const newNode = new tcNode(wordsArray[i]);
+                const newNode = new WordNode(wordsArray[i]);
                 this.end.next = newNode;
                 this.end = this.end.next;
                 this.length += 1;
@@ -93,7 +93,7 @@ class tcQueue {
 
     // add(word) {
     //     if (!this.head) {
-    //         const node = new tcNode(word);
+    //         const node = new WordNode(word);
     //         this.head = 
     //     }
     // }
@@ -108,18 +108,18 @@ function getTCArray() {
     return array;
 }
 
-function makeTCQueueWordRecord(word) {
-    if (!TCQueue.head) {                                       ///////////
-        const node = new tcNode(word);
-        TCQueue.head = node;
-        TCQueue.end = node;
+function makeWordQueueWordRecord(word) {
+    if (!wordQueue.head) {                                       ///////////
+        const node = new WordNode(word);
+        wordQueue.head = node;
+        wordQueue.end = node;
     } else {
-        TCQueue.end.next = new tcNode(word);
-        TCQueue.end = TCQueue.end.next; 
+        wordQueue.end.next = new WordNode(word);
+        wordQueue.end = wordQueue.end.next; 
     }
 
-    while (TCQueue.length > 500) {
-        TCQueue.head = TCQueue.head.next;
+    while (wordQueue.length > 500) {
+        wordQueue.head = wordQueue.head.next;
     }
 }
 
@@ -164,7 +164,7 @@ function getRandomWord(lettersArray) {
     const randomIndex = Math.floor(Math.random() * lettersArray.length);
     const randomWord = words[randomIndex];
 
-    makeTCQueueWordRecord(randomWord);
+    makeWordQueueWordRecord(randomWord);
 
     const wordElement = document.createElement("div");
     wordElement.classList.add("word");
@@ -202,9 +202,9 @@ function getRandomSymbol() {
 }
 
 
-function makeTCQueueRecords() {
+function makeWordQueueRecords() {
     let tcWords = "";
-    let curr = TCQueue.head;
+    let curr = wordQueue.head;
     while (curr) {
         tcWords += curr.word + ",";
         curr = curr.next;
@@ -215,19 +215,18 @@ function makeTCQueueRecords() {
     }
 
     localStorage.setItem("tcWords", tcWords);
-    localStorage.setItem("tcWrongCount", TCQueue.wrongCount);
-    localStorage.setItem("tcTotalCount", TCQueue.totalCount);
+    localStorage.setItem("tcWrongCount", wordQueue.wrongCount);
+    localStorage.setItem("tcTotalCount", wordQueue.totalCount);
 }
 
 function changeCursorPosition() {
-    const nextLetter = document.querySelector(".letter.current");
-    const cursor = document.getElementById("cursor");
-    const previousTop = cursor.style.top;
-    cursor.style.top = nextLetter.getBoundingClientRect().top + "px";
-    cursor.style.left = nextLetter.getBoundingClientRect().left + "px";
+    const nextLetterPosition = document.querySelector(".letter.current").getBoundingClientRect();
+    const previousTopPosition = cursor.style.top;
+    cursor.style.top = nextLetterPosition.top + "px";
+    cursor.style.left = nextLetterPosition.left + "px";
 
-    if (previousTop != cursor.style.top) {
-        makeTCQueueRecords();
+    if (previousTopPosition != cursor.style.top) {
+        makeWordQueueRecords();
         deletePreviousWords();
         changeCursorPosition();
         generateWords();
@@ -363,14 +362,20 @@ function getAllLettersMistakesCoefficientArray() {
     return array;
 }
 
+function setCursorPosition() {
+    const currentLetterPosition = document.querySelector(".letter.current").getBoundingClientRect();
+    cursor.style.top = currentLetterPosition.top + "px";
+    cursor.style.left = currentLetterPosition.left + "px";
+}
+
 function newGame() {
-    const wordsQueue = new Queue();
-    generateWords();                                              ////////
+    const timeQueue = new TimeQueue();
+    generateWords();
     setCurrent();
     setMaxResult();
-    changeCursorPosition();                                         //////////
+    setCursorPosition();
 
-    return wordsQueue;
+    return timeQueue;
 }
 
 function deletePreviousWords() {
@@ -395,33 +400,33 @@ function setCurrent() {
 function calculateTimeRanges() {                                   /////////// there should be more descriptive name for a function
     const timeNow = Date.now();
     for (let i = 3; i >= 0; --i) {
-        if (i != 3 && wordsQueue[valuesList[i + 1]] < wordsQueue[valuesList[i]]) {
-            wordsQueue[valuesList[i]] = wordsQueue[valuesList[i + 1]];
-            wordsQueue[pointersList[i]] = wordsQueue[pointersList[i + 1]];
+        if (i != 3 && timeQueue[valuesList[i + 1]] < timeQueue[valuesList[i]]) {
+            timeQueue[valuesList[i]] = timeQueue[valuesList[i + 1]];
+            timeQueue[pointersList[i]] = timeQueue[pointersList[i + 1]];
         } else {
             let outOfRange = true;
-            while (outOfRange && wordsQueue[pointersList[i]]) {
-                const pointerTime = wordsQueue[pointersList[i]].time;
+            while (outOfRange && timeQueue[pointersList[i]]) {
+                const pointerTime = timeQueue[pointersList[i]].time;
                 const diff = (timeNow - pointerTime) / 1000;
                 
                 if (diff < timeRanges[i]) {
                     outOfRange = false;
                 } else {
-                    wordsQueue[valuesList[i]] -= wordsQueue[pointersList[i]].val;
-                    wordsQueue[pointersList[i]] = wordsQueue[pointersList[i]].next;
+                    timeQueue[valuesList[i]] -= timeQueue[pointersList[i]].val;
+                    timeQueue[pointersList[i]] = timeQueue[pointersList[i]].next;
                 }
             }
         }
         
         ///// it would be better to make it in a separate function
         const resultElement = document.getElementById(timeRangeIds[i]);
-        resultElement.textContent = wordsQueue[valuesList[i]];
+        resultElement.textContent = timeQueue[valuesList[i]];
     }
 }
 
 function registerWord(currentWord) {
     const length = currentWord.childNodes.length;
-    wordsQueue.add(length);
+    timeQueue.add(length);
 
     const word = extractWord(currentWord);                             /////////// there should be more descriptive name for a function
     countRightLetters(word);
@@ -441,14 +446,14 @@ function extractWord(currentWord) {
 function countRightLetters(word) {                               ////////////////////////
     for (const letter of word) {
         const letterAscii = letter.charCodeAt(0);
-        ++TCQueue.totalCount[letterAscii];
+        ++wordQueue.totalCount[letterAscii];
     }
 }
 
 function updateMaxResult() { 
     for (let i = 0; i < 4; ++i) {
-        if (wordsQueue[valuesList[i]] > maxResultValues[i]) {
-            maxResultValues[i] = wordsQueue[valuesList[i]];
+        if (timeQueue[valuesList[i]] > maxResultValues[i]) {
+            maxResultValues[i] = timeQueue[valuesList[i]];
             localStorage.setItem(maxResultIds[i], maxResultValues[i]);
             document.getElementById(maxResultIds[i]).textContent = maxResultValues[i];
         }
@@ -536,7 +541,7 @@ document.addEventListener("keydown", ev => {
             }
             
             const letterAscii = currentLetter.textContent.charCodeAt(0);
-            ++TCQueue.wrongCount[letterAscii];
+            ++wordQueue.wrongCount[letterAscii];
         }
     }
 
@@ -627,10 +632,11 @@ const maxResultValues = getMaxResultValues();
 const wordsIndexes = getWordIndexes();
 
 let capsLockCount = 0;
-const TCQueue = new tcQueue();  ///////////////////////////////////////////////////////////
-const wordsQueue = newGame(); 
-const valuesList = wordsQueue.valuesList;
-const pointersList = wordsQueue.pointersList;
+const cursor = document.getElementById("cursor");
+const wordQueue = new WordQueue();                   ///////////////////////////////////////////////////////////
+const timeQueue = newGame(); 
+const valuesList = timeQueue.valuesList;
+const pointersList = timeQueue.pointersList;
 const timeRanges = [15, 30, 60, 120];
 
 // design idea:
