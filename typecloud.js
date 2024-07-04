@@ -57,10 +57,11 @@ class WordQueue {
         this.head = null;
         this.end = null;
         this.length = 0;
+        this.maxLength = 10;
 
-        const words = localStorage.getItem("tcWords");
+        const words = localStorage.getItem("wordQueueWords");
         if (!words) {
-            localStorage.setItem("tcWords", "");
+            localStorage.setItem("wordQueueWords", "");
         } else {
             const wordsArray = words.split(",");
             const wordsArrayLength = wordsArray.length;
@@ -78,49 +79,47 @@ class WordQueue {
             }
         }
 
-        this.totalCount = localStorage.getItem("tcTotalCount")?.split(",");
+        this.totalCount = localStorage.getItem("wordQueueTotalCount")?.split(",");
         if (!this.totalCount) {
-            this.totalCount = getTCArray();
-            localStorage.setItem("tcTotalCount", this.totalCount);
+            this.totalCount = getWordQueueArray();
+            localStorage.setItem("wordQueueTotalCount", this.totalCount);
         }
 
-        this.wrongCount = localStorage.getItem("tcWrongCount")?.split(",");
+        this.wrongCount = localStorage.getItem("wordQueueWrongCount")?.split(",");
         if (!this.wrongCount) {
-            this.wrongCount = getTCArray();
-            localStorage.setItem("tcWrongCount", this.wrongCount);
+            this.wrongCount = getWordQueueArray();
+            localStorage.setItem("wordQueueWrongCount", this.wrongCount);
         }
     }
 
-    // add(word) {
-    //     if (!this.head) {
-    //         const node = new WordNode(word);
-    //         this.head = 
-    //     }
-    // }
+    add(word) {
+        if (!this.head) {
+            const node = new WordNode(word);
+            this.head = node;
+            this.end = node;
+        } else {
+            this.end.next = new WordNode(word);
+            this.end = this.end.next; 
+        }
+
+        ++this.length;
+
+        while (this.length > this.maxLength) {
+            // this function does not remove wrong and total count back
+            // wordQueueWords has to take into account not only RegularWords, but SymbolsWords and NumbersWords too.
+            this.head = this.head.next;
+            --this.length;
+        }
+    }
 }
 
-function getTCArray() {
+function getWordQueueArray() {
     const array = [];
     for (let i = 0; i < 127; ++i) {
         array.push(Number(0));
     }
 
     return array;
-}
-
-function makeWordQueueWordRecord(word) {
-    if (!wordQueue.head) {                                       ///////////
-        const node = new WordNode(word);
-        wordQueue.head = node;
-        wordQueue.end = node;
-    } else {
-        wordQueue.end.next = new WordNode(word);
-        wordQueue.end = wordQueue.end.next; 
-    }
-
-    while (wordQueue.length > 500) {
-        wordQueue.head = wordQueue.head.next;
-    }
 }
 
 function makeCapsLockWord(wordElement, randomWord) {
@@ -164,7 +163,7 @@ function getRandomWord(lettersArray) {
     const randomIndex = Math.floor(Math.random() * lettersArray.length);
     const randomWord = words[randomIndex];
 
-    makeWordQueueWordRecord(randomWord);
+    wordQueue.add(randomWord);
 
     const wordElement = document.createElement("div");
     wordElement.classList.add("word");
@@ -203,20 +202,20 @@ function getRandomSymbol() {
 
 
 function makeWordQueueRecords() {
-    let tcWords = "";
+    let wordQueueWords = "";
     let curr = wordQueue.head;
     while (curr) {
-        tcWords += curr.word + ",";
+        wordQueueWords += curr.word + ",";
         curr = curr.next;
     }
 
-    if (tcWords != "") {
-        tcWords = tcWords.slice(0, -1);
+    if (wordQueueWords != "") {
+        wordQueueWords = wordQueueWords.slice(0, -1);
     }
 
-    localStorage.setItem("tcWords", tcWords);
-    localStorage.setItem("tcWrongCount", wordQueue.wrongCount);
-    localStorage.setItem("tcTotalCount", wordQueue.totalCount);
+    localStorage.setItem("wordQueueWords", wordQueueWords);
+    localStorage.setItem("wordQueueWrongCount", wordQueue.wrongCount);
+    localStorage.setItem("wordQueueTotalCount", wordQueue.totalCount);
 }
 
 function changeCursorPosition() {
@@ -256,6 +255,7 @@ function regularRandomAlgorithm() {
 }
 
 function typecloud(array) {
+    // wordQueueWords has to take into account not only RegularWords, but SymbolsWords and NumbersWords too.
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomValue = Math.random();
         if (randomValue <= 0.075) {
