@@ -239,29 +239,12 @@ function changeCursorPosition() {
 }
 
 function generateWords() {
+    // the problem is in this code right here
+    // i think i need to make the getAllLettersMistakesCoefficientArray()
+    // to be three separate arrays:
+    // one for symbols, one for numbers and the last for letters
+    // and draw letters from there
     const array = getAllLettersMistakesCoefficientArray();
-    const noMistakesWereMadeBefore = (array[25] === 0);
-    if (noMistakesWereMadeBefore) {
-        regularRandomAlgorithm();
-    } else {
-        typecloud(array);
-    }
-}
-
-function regularRandomAlgorithm() {
-    // this is the algorithm that typecloud is going to use
-    // if it's the first time a user logged into typecloud
-    // or he is so good, that he just doesn't make mistakes while typing
-
-    while (wordsList.scrollHeight <= wordsList.clientHeight) {
-        const randomIndex = Math.floor(Math.random() * wordsLength);
-        const word = getRandomWord(randomIndex);
-        wordsList.appendChild(word);
-    }
-}
-
-function typecloud(array) {
-    // wordQueueWords has to take into account not only RegularWords, but SymbolsWords and NumbersWords too.
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomValue = Math.random();
         if (randomValue <= 0.075) {
@@ -349,20 +332,25 @@ function getAllLettersMistakesCoefficientArray() {
     // in order to then use this array to determine what letter is next to work on
     
     // the higher the letter's coefficient = the higher the chance to get a word with that letter
+    const wordQueueTotalCount = localStorage.getItem("wordQueueTotalCount").split(",");
+    const wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
     let seenCoefficientsSum = 0;
     const array = [];
+    let index = 97;
     for (let i = 0; i < lettersLength; ++i) {
         const letter = letters[i];
-        const lettersTotalCount = parseInt(localStorage.getItem(letter + "Total"));
+        const lettersTotalCount = parseInt(wordQueueTotalCount[index]);
         if (lettersTotalCount == 0) {
             array.push(seenCoefficientsSum);
             continue;
         }
 
-        const lettersWrongCount = parseInt(localStorage.getItem(letter + "Wrong"));
+        const lettersWrongCount = parseInt(wordQueueWrongCount[index]);
         const lettersCoefficient = lettersWrongCount / lettersTotalCount;
         seenCoefficientsSum += lettersCoefficient;
         array.push(seenCoefficientsSum);
+
+        ++index;
     }
 
     return array;
@@ -540,7 +528,6 @@ async function makeLocalStorageRecordsIfNeeded() {
     async function loadWordsIndexes() {
         const response = await fetch("wordsIndexes.json");
         const wordsIndexesData = await response.json();
-        console.log(wordsIndexesData);
         return wordsIndexesData;
     }
 
@@ -551,7 +538,7 @@ async function makeLocalStorageRecordsIfNeeded() {
     }
 
     let wordsIndexes;
-    for (let i = 0; i < 26; ++i) {
+    for (let i = 0; i < lettersLength; ++i) {
         const letter = letters[i];
         if (!localStorage.getItem(letter + "LetterWords")) {
             if (!wordsIndexes) {
