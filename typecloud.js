@@ -1,3 +1,12 @@
+function getWordQueueArray() {
+    const array = [];
+    for (let i = 0; i < 127; ++i) {
+        array.push(Number(0));
+    }
+
+    return array;
+}
+
 class TimeNode {
     constructor(val, time) {
         this.val = val;
@@ -49,6 +58,12 @@ class TimeQueue {
 class WordNode {
     constructor(word) {
         this.word = word;
+        this.totalCount = getWordQueueArray();
+        for (const letter of word) {
+            ++this.totalCount[letter.charCodeAt(0)];
+        }
+
+        this.wrongCount = getWordQueueArray();
     }
 }
 
@@ -111,15 +126,6 @@ class WordQueue {
             --this.length;
         }
     }
-}
-
-function getWordQueueArray() {
-    const array = [];
-    for (let i = 0; i < 127; ++i) {
-        array.push(Number(0));
-    }
-
-    return array;
 }
 
 function makeCapsLockWord(wordElement, randomWord) {
@@ -424,32 +430,6 @@ function calculateTimeRanges() {                                   /////////// t
     }
 }
 
-function registerWord(currentWord) {
-    const length = currentWord.childNodes.length;
-    timeQueue.add(length);
-
-    const word = extractWord(currentWord);                             /////////// there should be more descriptive name for a function
-    countRightLetters(word);
-}
-
-function extractWord(currentWord) {
-    let word = "";
-    for (const letter of currentWord.childNodes) {
-        if (letter.textContent) {
-            word += letter.textContent;
-        }
-    }
-
-    return word;
-}
-
-function countRightLetters(word) {                               ////////////////////////
-    for (const letter of word) {
-        const letterAscii = letter.charCodeAt(0);
-        ++wordQueue.totalCount[letterAscii];
-    }
-}
-
 function updateMaxResult() { 
     for (let i = 0; i < 4; ++i) {
         if (timeQueue[valuesList[i]] > maxResultValues[i]) {
@@ -511,7 +491,9 @@ document.addEventListener("keydown", ev => {
             }
 
             if (!stillWrong) {
-                registerWord(currentWord);
+                const length = currentWord.childNodes.length;
+                timeQueue.add(length);
+                
                 calculateTimeRanges();
                 updateMaxResult();
                 
@@ -541,7 +523,7 @@ document.addEventListener("keydown", ev => {
             }
             
             const letterAscii = currentLetter.textContent.charCodeAt(0);
-            ++wordQueue.wrongCount[letterAscii];
+            ++wordQueue.head.wrongCount[letterAscii];
         }
     }
 
@@ -615,12 +597,12 @@ function getWordIndexes() {
 
 
 const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
-const lettersLength = 26;
-const symbols = ['!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^',
+const lettersLength = letters.length;
+const symbols = ['!', '"', '#', '$', '%', '&', '(', ')', '*', '+', ',', '-', '.', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^',
      '_', '`', '{', '|', '}', '~', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-const symbolsLength = 42;
+const symbolsLength = symbols.length;
 const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-const numbersLength = 10;
+const numbersLength = numbers.length;
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
 
