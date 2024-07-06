@@ -1,6 +1,6 @@
 function getWordQueueArray() {
     const array = [];
-    for (let i = 0; i < 127; ++i) {
+    for (let i = 0; i < arrayLength; ++i) {
         array.push(Number(0));
     }
 
@@ -248,9 +248,9 @@ function generateWords() {
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomValue = Math.random();
         if (randomValue <= 0.075) {
-            generateSymbolsWord();
+            generateSymbolsWord(array);
         } else if (randomValue <= 0.125) {
-            generateNumbersWord();
+            generateNumbersWord(array);
         } else {
             if (randomValue <= 0.2) {
                 capsLockCount += 1 + Math.ceil(Math.random() * 3);
@@ -267,7 +267,7 @@ function generateRegularWord(array) {
     wordsList.appendChild(word);
 }
 
-function generateNumbersWord() {
+function generateNumbersWord(array) {
     const numbersWord = document.createElement("div");
     numbersWord.classList.add("word", "numbers");
 
@@ -284,7 +284,7 @@ function generateNumbersWord() {
     wordsList.appendChild(numbersWord);
 }
 
-function generateSymbolsWord() {
+function generateSymbolsWord(array) {
     const extraSymbolsLength = Math.floor(Math.random() * 4);
     const symbolsWordLength = 9 + extraSymbolsLength;
 
@@ -336,22 +336,39 @@ function getAllLettersMistakesCoefficientArray() {
     const wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
     let seenCoefficientsSum = 0;
     const array = [];
-    let index = 97;
-    for (let i = 0; i < lettersLength; ++i) {
-        const letter = letters[i];
-        const lettersTotalCount = parseInt(wordQueueTotalCount[index]);
+    for (let i = 0; i < arrayLength; ++i) {
+        const lettersTotalCount = parseInt(wordQueueTotalCount[i]);
         if (lettersTotalCount == 0) {
             array.push(seenCoefficientsSum);
             continue;
         }
 
-        const lettersWrongCount = parseInt(wordQueueWrongCount[index]);
+        const lettersWrongCount = parseInt(wordQueueWrongCount[i]);
         const lettersCoefficient = lettersWrongCount / lettersTotalCount;
         seenCoefficientsSum += lettersCoefficient;
         array.push(seenCoefficientsSum);
-
-        ++index;
     }
+
+    // the purpose of lettersOccurenceConsistencyCoefficient variable is:
+    // 1) to make sure that at least 20% of words
+    //    are drawn with the idea in mind
+    //    that if, for example, the user wasn't getting 'x', 'y', 'z' letter words enough
+    //    then he would get them to practice typing those letters
+    //
+    //    so, in summary: 
+    //        80% of words are dedicated to practice user's worse accuracy letters
+    //        and 20% to ensure consistency of letters occurence
+    //
+    // 2) and also it helps in the case
+    //    where the user has just logged in typecloud
+    //    so there is no data on what is his worse accuracy letters
+    //    so, it will work just like a regular random drawing algorithm
+
+    // const lettersOccurenceConsistencyCoefficient = Math.max(1, array[arrayLength - 1] / 4);
+    // const lettersConsistencyArray = [];
+    // for (let i = 0; i < arrayLength; ++i) {
+
+    // }
 
     return array;
 }
@@ -592,6 +609,7 @@ const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 const numbersLength = numbers.length;
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
+const arrayLength = 127;
 
 makeLocalStorageRecordsIfNeeded();
 const words = localStorage.getItem("words").split(",");
@@ -661,3 +679,21 @@ const timeRanges = [15, 30, 60, 120];
 // so the user would get the same exact word 
 // a required number of times before it will type in the right way
 // without making any mistake
+
+
+
+
+// realize typecloud words database as a trie
+// it will work like this:
+// random letter out of the worse gets drawn
+// then algorithm keeps rolling worse letters
+// while there are words containing those letters
+// like: user drawn 't', 'h', 'e'
+// and there is a word "the" in words
+// so it is the one that gets drawn
+// if, for example, user drawn 't', 'h', 'z'
+// but there are no words containing all those letters
+// then it rolls back the last one
+// and it selects random word out of 't', 'h'
+// this is the best idea i have so far
+// but very difficult to implement
