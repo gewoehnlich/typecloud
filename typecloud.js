@@ -72,7 +72,7 @@ class WordQueue {
         this.head = null;
         this.end = null;
         this.length = 0;
-        this.maxLength = 10;
+        this.maxLength = 100;
 
         const words = localStorage.getItem("wordQueueWords");
         if (!words) {
@@ -238,25 +238,66 @@ function changeCursorPosition() {
     }
 }
 
+function calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, arrayIndexes) {
+    let seenCoefficientsSum = 0;
+    const array = [];
+    for (const i of arrayIndexes) {
+        const lettersTotalCount = parseInt(wordQueueTotalCount[i]);
+        if (lettersTotalCount == 0) {
+            array.push(seenCoefficientsSum);
+            continue;
+        }
+
+        const lettersWrongCount = parseInt(wordQueueWrongCount[i]);
+        const lettersCoefficient = lettersWrongCount / lettersTotalCount;
+        seenCoefficientsSum += lettersCoefficient;
+        array.push(seenCoefficientsSum);
+    }
+
+    const lettersOccurenceConsistencyCoefficient = Math.max(1, array[array.length - 1] / 4);
+    const lettersConsistencyArray = [];
+    let lettersConsistencySum = 0;
+    for (const i of arrayIndexes) {
+        lettersConsistencySum += 1 / Math.max(1, wordQueueTotalCount[i]);
+        lettersConsistencyArray.push(lettersConsistencySum);
+    }
+
+    const coefficient = lettersOccurenceConsistencyCoefficient / lettersConsistencyArray[array.length - 1];
+    for (let i = 0; i < array.length; ++i) {
+        array[i] += lettersConsistencyArray[i] * coefficient;
+    }
+
+    console.log(array);
+    return array;
+}
+
+// function generateCoefficientArrays() {
+//     const wordQueueTotalCount = localStorage.getItem("wordQueueTotalCount").split(",");
+//     const wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
+//     const symbolsCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, symbolsIndexes);
+//     const numbersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, numbersIndexes);
+//     const lettersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, lettersIndexes);
+// }
+
 function generateWords() {
-    // the problem is in this code right here
-    // i think i need to make the getAllLettersMistakesCoefficientArray()
-    // to be three separate arrays:
-    // one for symbols, one for numbers and the last for letters
-    // and draw letters from there
-    const array = getAllLettersMistakesCoefficientArray();
+    const wordQueueTotalCount = localStorage.getItem("wordQueueTotalCount").split(",");
+    const wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
+    const symbolsCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, symbolsIndexes);
+    const numbersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, numbersIndexes);
+    const lettersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, lettersIndexes);
+
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomValue = Math.random();
         if (randomValue <= 0.075) {
-            generateSymbolsWord(array);
+            generateSymbolsWord(symbolsCoefficientArray);
         } else if (randomValue <= 0.125) {
-            generateNumbersWord(array);
+            generateNumbersWord(numbersCoefficientArray);
         } else {
             if (randomValue <= 0.2) {
                 capsLockCount += 1 + Math.ceil(Math.random() * 3);
             }
 
-            generateRegularWord(array);
+            generateRegularWord(lettersCoefficientArray);
         }
     }
 }
@@ -321,56 +362,6 @@ function getProblematicLetter(array) {
     }
 
     return wordsIndexes[letterIndex];
-}
-
-function getAllLettersMistakesCoefficientArray() {
-    // what this function does is:
-    // for example, a user got in total 10 words with a letter "e" in them
-    // and he made a mistake 3 times trying to type "e" in those words
-    // so, his lettersCoefficient is 3/10 = 0.3
-    // and all of the letters get calculated this way
-    // in order to then use this array to determine what letter is next to work on
-    
-    // the higher the letter's coefficient = the higher the chance to get a word with that letter
-    const wordQueueTotalCount = localStorage.getItem("wordQueueTotalCount").split(",");
-    const wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
-    let seenCoefficientsSum = 0;
-    const array = [];
-    for (let i = 0; i < arrayLength; ++i) {
-        const lettersTotalCount = parseInt(wordQueueTotalCount[i]);
-        if (lettersTotalCount == 0) {
-            array.push(seenCoefficientsSum);
-            continue;
-        }
-
-        const lettersWrongCount = parseInt(wordQueueWrongCount[i]);
-        const lettersCoefficient = lettersWrongCount / lettersTotalCount;
-        seenCoefficientsSum += lettersCoefficient;
-        array.push(seenCoefficientsSum);
-    }
-
-    // the purpose of lettersOccurenceConsistencyCoefficient variable is:
-    // 1) to make sure that at least 20% of words
-    //    are drawn with the idea in mind
-    //    that if, for example, the user wasn't getting 'x', 'y', 'z' letter words enough
-    //    then he would get them to practice typing those letters
-    //
-    //    so, in summary: 
-    //        80% of words are dedicated to practice user's worse accuracy letters
-    //        and 20% to ensure consistency of letters occurence
-    //
-    // 2) and also it helps in the case
-    //    where the user has just logged in typecloud
-    //    so there is no data on what is his worse accuracy letters
-    //    so, it will work just like a regular random drawing algorithm
-
-    // const lettersOccurenceConsistencyCoefficient = Math.max(1, array[arrayLength - 1] / 4);
-    // const lettersConsistencyArray = [];
-    // for (let i = 0; i < arrayLength; ++i) {
-
-    // }
-
-    return array;
 }
 
 function setCursorPosition() {
@@ -610,6 +601,9 @@ const numbersLength = numbers.length;
 const timeRangeIds = ["rangeFifteen", "rangeThirty", "rangeOneMinute", "rangeTwoMinutes"];
 const maxResultIds = ["maxResultFifteen", "maxResultThirty", "maxResultOneMinute", "maxResultTwoMinutes"];
 const arrayLength = 127;
+const symbolsIndexes = [33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 58, 59, 60, 61, 62, 63, 64, 91, 92, 93, 94, 95, 96, 123, 124, 125, 126];
+const numbersIndexes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
+const lettersIndexes = [97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122];
 
 makeLocalStorageRecordsIfNeeded();
 const words = localStorage.getItem("words").split(",");
