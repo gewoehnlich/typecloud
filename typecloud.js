@@ -238,7 +238,7 @@ function changeCursorPosition() {
     }
 }
 
-function calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, arrayIndexes) {
+function calculateCoefficientArray(arrayIndexes) {
     let seenCoefficientsSum = 0;
     const array = [];
     for (const i of arrayIndexes) {
@@ -267,24 +267,19 @@ function calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, arr
         array[i] += lettersConsistencyArray[i] * coefficient;
     }
 
-    console.log(array);
     return array;
 }
 
-// function generateCoefficientArrays() {
-//     const wordQueueTotalCount = localStorage.getItem("wordQueueTotalCount").split(",");
-//     const wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
-//     const symbolsCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, symbolsIndexes);
-//     const numbersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, numbersIndexes);
-//     const lettersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, lettersIndexes);
-// }
+function generateCoefficientArrays() {
+    wordQueueTotalCount = localStorage.getItem("wordQueueTotalCount").split(",");
+    wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
+    symbolsCoefficientArray = calculateCoefficientArray(symbolsIndexes);
+    numbersCoefficientArray = calculateCoefficientArray(numbersIndexes);
+    lettersCoefficientArray = calculateCoefficientArray(lettersIndexes);
+}
 
 function generateWords() {
-    const wordQueueTotalCount = localStorage.getItem("wordQueueTotalCount").split(",");
-    const wordQueueWrongCount = localStorage.getItem("wordQueueWrongCount").split(",");
-    const symbolsCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, symbolsIndexes);
-    const numbersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, numbersIndexes);
-    const lettersCoefficientArray = calculateCoefficientArray(wordQueueTotalCount, wordQueueWrongCount, lettersIndexes);
+    generateCoefficientArrays();
 
     while (wordsList.scrollHeight <= wordsList.clientHeight) {
         const randomValue = Math.random();
@@ -519,7 +514,7 @@ document.addEventListener("keydown", ev => {
             }
             
             const letterAscii = currentLetter.textContent.charCodeAt(0);
-            ++wordQueue.head.wrongCount[letterAscii];
+            // ++wordQueue.curr.wrongCount[letterAscii];
         }
     }
 
@@ -604,6 +599,11 @@ const arrayLength = 127;
 const symbolsIndexes = [33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 58, 59, 60, 61, 62, 63, 64, 91, 92, 93, 94, 95, 96, 123, 124, 125, 126];
 const numbersIndexes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
 const lettersIndexes = [97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122];
+let wordQueueTotalCount;
+let wordQueueWrongCount;
+let symbolsCoefficientArray;
+let numbersCoefficientArray;
+let lettersCoefficientArray;
 
 makeLocalStorageRecordsIfNeeded();
 const words = localStorage.getItem("words").split(",");
