@@ -128,6 +128,69 @@ class WordQueue {
     }
 }
 
+class Node {
+    constructor(word, time) {
+        this.word = word; // length is word.length;
+        this.time = time;
+        this.next = null;
+        this.totalCount = {};
+        this.wrongCount = {};
+    }
+}
+
+// class Queue {
+//     constructor() {
+//         this.head = null;
+//         this.end = null;
+//         this.currentLength = 0;
+//         this.maxLength = 100;
+
+//         this.valueFifteenSeconds = 0;
+//         this.valueThirtySeconds = 0;
+//         this.valueOneMinute = 0;
+//         this.valueTwoMinutes = 0;
+//         this.valuesList = ["valueFifteenSeconds", "valueThirtySeconds", "valueOneMinute", "valueTwoMinutes"];
+        
+//         this.pointerFifteenSeconds = null;
+//         this.pointerThirtySeconds = null;
+//         this.pointerOneMinute = null;
+//         this.pointerTwoMinutes = null;
+//         this.pointersList = ["pointerFifteenSeconds", "pointerThirtySeconds", "pointerOneMinute", "pointerTwoMinutes"];
+
+//         const words = localStorage.getItem("wordQueueWords");
+//         if (!words) {
+//             localStorage.setItem("wordQueueWords", "");
+//         } else {
+//             const wordsArray = words.split(",");
+//             const wordsArrayLength = wordsArray.length;
+
+//             const headNode = new WordNode(wordsArray[0]);
+//             this.head = headNode;
+//             this.end = headNode;
+//             this.length += 1;
+
+//             for (let i = 1; i < wordsArrayLength; ++i) {
+//                 const newNode = new WordNode(wordsArray[i]);
+//                 this.end.next = newNode;
+//                 this.end = this.end.next;
+//                 this.length += 1;
+//             }
+//         }
+
+//         this.totalCount = localStorage.getItem("wordQueueTotalCount")?.split(",");
+//         if (!this.totalCount) {
+//             this.totalCount = getWordQueueArray();
+//             localStorage.setItem("wordQueueTotalCount", this.totalCount);
+//         }
+
+//         this.wrongCount = localStorage.getItem("wordQueueWrongCount")?.split(",");
+//         if (!this.wrongCount) {
+//             this.wrongCount = getWordQueueArray();
+//             localStorage.setItem("wordQueueWrongCount", this.wrongCount);
+//         }
+//     }    
+// }
+
 function makeCapsLockWord(wordElement, randomWord) {
     const randomWordLength = randomWord.length;
     for (let i = 0; i < randomWordLength; ++i) {
@@ -534,6 +597,24 @@ async function makeLocalStorageRecordsIfNeeded() {
         return wordsIndexesData;
     }
 
+    async function loadTrie() {
+        const response = await fetch("trie4.json");
+        const trieData = await response.json();
+        return trieData;
+    }
+
+    async function storeTrieInIndexedDB(data) {
+        const request = indexedDB.open("trie", 1);
+
+        request.onsuccess = function(event) {
+            const db = event.target.result;
+            const transaction = db.transaction("trie", 'readwrite');
+            const objectStore = transaction.objectStore("trie");
+
+            objectStore.put(data);
+        }
+    }
+
     let words;
     if (!localStorage.getItem("words")) {
         words = await loadWords();
@@ -552,7 +633,17 @@ async function makeLocalStorageRecordsIfNeeded() {
         }
     }
 
-    if (wordsIndexes || words) {
+    let trieData;
+    if (!indexedDB.databases()) {
+        console.log('wer')
+        data = await loadTrie();
+        trieData = await storeTrieInIndexedDB(data);
+    }
+
+    // data = await loadTrie();
+    // trieData = await storeTrieInIndexedDB(data);
+
+    if (wordsIndexes || words || trieData) {
         location.reload();
     }
 }
@@ -614,7 +705,7 @@ const wordsIndexes = getWordIndexes();
 
 let capsLockCount = 0;
 const cursor = document.getElementById("cursor");
-const wordQueue = new WordQueue();                   ///////////////////////////////////////////////////////////
+const wordQueue = new WordQueue();
 const timeQueue = newGame(); 
 const valuesList = timeQueue.valuesList;
 const pointersList = timeQueue.pointersList;
